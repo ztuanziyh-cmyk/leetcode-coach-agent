@@ -26,7 +26,11 @@ const hintAgent = new Agent({
   ].join("\n"),
 });
 
-export async function runHintAgent(input: CoachAgentInput, pattern: PatternAgentOutput) {
+export async function runHintAgent(
+  input: CoachAgentInput,
+  pattern: PatternAgentOutput,
+  options: { signal?: AbortSignal } = {},
+) {
   const result = await run(
     hintAgent,
     [
@@ -34,7 +38,7 @@ export async function runHintAgent(input: CoachAgentInput, pattern: PatternAgent
       `Pattern Agent guess: ${pattern.patternGuess}`,
       `Why this pattern fits: ${pattern.patternFit}`,
     ].join("\n\n"),
-    { maxTurns: 1 },
+    { maxTurns: 1, signal: options.signal },
   );
 
   if (!result.finalOutput) {

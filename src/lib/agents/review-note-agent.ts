@@ -35,6 +35,7 @@ export async function runReviewNoteAgent(
   input: CoachAgentInput,
   pattern: PatternAgentOutput,
   hints: HintAgentOutput,
+  options: { signal?: AbortSignal } = {},
 ) {
   const result = await run(
     reviewNoteAgent,
@@ -46,7 +47,7 @@ export async function runReviewNoteAgent(
       `Optimized direction: ${hints.optimizedDirection}`,
       `Key takeaway: ${hints.keyTakeaway}`,
     ].join("\n\n"),
-    { maxTurns: 1 },
+    { maxTurns: 1, signal: options.signal },
   );
 
   if (!result.finalOutput) {

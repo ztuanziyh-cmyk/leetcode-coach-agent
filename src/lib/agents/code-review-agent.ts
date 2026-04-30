@@ -25,7 +25,11 @@ const codeReviewAgent = new Agent({
   ].join("\n"),
 });
 
-export async function runCodeReviewAgent(input: CoachAgentInput, pattern: PatternAgentOutput) {
+export async function runCodeReviewAgent(
+  input: CoachAgentInput,
+  pattern: PatternAgentOutput,
+  options: { signal?: AbortSignal } = {},
+) {
   if (!input.code) {
     return null;
   }
@@ -37,7 +41,7 @@ export async function runCodeReviewAgent(input: CoachAgentInput, pattern: Patter
       `Pattern Agent guess: ${pattern.patternGuess}`,
       `Why this pattern fits: ${pattern.patternFit}`,
     ].join("\n\n"),
-    { maxTurns: 1 },
+    { maxTurns: 1, signal: options.signal },
   );
 
   if (!result.finalOutput) {

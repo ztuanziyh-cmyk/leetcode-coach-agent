@@ -3,9 +3,16 @@ import { runCodeReviewAgent } from "@/lib/agents/code-review-agent";
 import { runHintAgent } from "@/lib/agents/hint-agent";
 import { runPatternAgent } from "@/lib/agents/pattern-agent";
 import { runReviewNoteAgent } from "@/lib/agents/review-note-agent";
-import { coachFeedbackSchema } from "@/lib/agents/schemas";
+import { coachFeedbackSchema, coachModel } from "@/lib/agents/schemas";
 
-export async function runCoachManager(input: CoachRequest): Promise<CoachFeedback> {
+type RunCoachManagerOptions = {
+  signal?: AbortSignal;
+};
+
+export async function runCoachManager(
+  input: CoachRequest,
+  options: RunCoachManagerOptions = {},
+): Promise<CoachFeedback> {
   const agentTrace: AgentTraceItem[] = [
     {
       agentName: "Coach Manager",
@@ -16,14 +23,14 @@ export async function runCoachManager(input: CoachRequest): Promise<CoachFeedbac
     },
   ];
 
-  const pattern = await runPatternAgent(input);
+  const pattern = await runPatternAgent(input, options);
   agentTrace.push({
     agentName: "Pattern Agent",
     status: "completed",
     summary: `Identified ${pattern.patternGuess}.`,
   });
 
-  const hints = await runHintAgent(input, pattern);
+  const hints = await runHintAgent(input, pattern, options);
   agentTrace.push({
     agentName: "Hint Agent",
     status: "completed",
@@ -31,8 +38,8 @@ export async function runCoachManager(input: CoachRequest): Promise<CoachFeedbac
   });
 
   const [codeReview, reviewNote] = await Promise.all([
-    runCodeReviewAgent(input, pattern),
-    runReviewNoteAgent(input, pattern, hints),
+    runCodeReviewAgent(input, pattern, options),
+    runReviewNoteAgent(input, pattern, hints, options),
   ]);
 
   agentTrace.push(
@@ -55,6 +62,7 @@ export async function runCoachManager(input: CoachRequest): Promise<CoachFeedbac
   );
 
   return coachFeedbackSchema.parse({
+    modelUsed: coachModel,
     patternGuess: `${pattern.patternGuess}: ${pattern.patternFit}`,
     hints: hints.hints,
     bruteForceIdea: hints.bruteForceIdea,

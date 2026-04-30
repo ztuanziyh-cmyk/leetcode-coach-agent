@@ -25,8 +25,14 @@ const patternAgent = new Agent({
   ].join("\n"),
 });
 
-export async function runPatternAgent(input: CoachAgentInput) {
-  const result = await run(patternAgent, buildCoachContext(input), { maxTurns: 1 });
+export async function runPatternAgent(
+  input: CoachAgentInput,
+  options: { signal?: AbortSignal } = {},
+) {
+  const result = await run(patternAgent, buildCoachContext(input), {
+    maxTurns: 1,
+    signal: options.signal,
+  });
 
   if (!result.finalOutput) {
     throw new Error("Pattern Agent did not return structured output.");

@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
 
 import { runCoachManager } from "@/lib/agents/coach-manager";
-import { type CoachProblemContext, type CoachRequest, helpModes } from "@/lib/coach";
+import { coachModel } from "@/lib/agents/schemas";
+import {
+  coachInputLimits,
+  type CoachProblemContext,
+  type CoachRequest,
+  helpModes,
+} from "@/lib/coach";
+
+const COACH_REQUEST_TIMEOUT_MS = 45_000;
+
+export function GET() {
+  return NextResponse.json({ model: coachModel }, { status: 200 });
+}
 
 export async function POST(request: Request) {
   if (!process.env.OPENAI_API_KEY) {
@@ -19,27 +31,45 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 });
   }
 
-  const payload = normalizeCoachRequest(body);
+  const normalized = normalizeCoachRequest(body);
 
-  if (!payload) {
+  if (!normalized.ok) {
     return NextResponse.json(
-      { error: "Problem, current idea, stuck point, and help mode are required." },
-      { status: 400 },
+      { error: normalized.error },
+      { status: normalized.status },
     );
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), COACH_REQUEST_TIMEOUT_MS);
+
   try {
-    const feedback = await runCoachManager(payload);
+    const feedback = await runCoachManager(normalized.payload, {
+      signal: controller.signal,
+    });
     return NextResponse.json({ data: feedback }, { status: 200 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Coach request failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const status = isAbortError(error) ? 504 : 500;
+    const message = isAbortError(error)
+      ? "Coach request timed out. Try shortening the prompt or optional code."
+      : "Coach request failed. Check the model configuration and try again.";
+    return NextResponse.json({ error: message }, { status });
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
-function normalizeCoachRequest(value: unknown): CoachRequest | null {
+type NormalizeCoachRequestResult =
+  | { ok: true; payload: CoachRequest }
+  | { ok: false; error: string; status: 400 };
+
+function normalizeCoachRequest(value: unknown): NormalizeCoachRequestResult {
   if (!value || typeof value !== "object") {
-    return null;
+    return {
+      ok: false,
+      error: "Problem, current idea, stuck point, and help mode are required.",
+      status: 400,
+    };
   }
 
   const input = value as Record<string, unknown>;
@@ -51,17 +81,64 @@ function normalizeCoachRequest(value: unknown): CoachRequest | null {
   const problemContext = normalizeProblemContext(input.problemContext);
 
   if (!problem || !currentIdea || !stuckPoint || !isHelpMode(helpMode)) {
-    return null;
+    return {
+      ok: false,
+      error: "Problem, current idea, stuck point, and help mode are required.",
+      status: 400,
+    };
+  }
+
+  const lengthError = getLengthError({
+    problem,
+    currentIdea,
+    stuckPoint,
+    code,
+  });
+
+  if (lengthError) {
+    return {
+      ok: false,
+      error: lengthError,
+      status: 400,
+    };
   }
 
   return {
-    problem: problem.slice(0, 160),
-    currentIdea: currentIdea.slice(0, 3000),
-    stuckPoint: stuckPoint.slice(0, 2000),
-    code: code ? code.slice(0, 8000) : undefined,
-    helpMode,
-    problemContext: problemContext ?? undefined,
+    ok: true,
+    payload: {
+      problem,
+      currentIdea,
+      stuckPoint,
+      code: code || undefined,
+      helpMode,
+      problemContext: problemContext ?? undefined,
+    },
   };
+}
+
+function getLengthError(input: {
+  problem: string;
+  currentIdea: string;
+  stuckPoint: string;
+  code: string;
+}) {
+  if (input.problem.length > coachInputLimits.problem) {
+    return `Problem title or slug must be ${coachInputLimits.problem} characters or fewer.`;
+  }
+
+  if (input.currentIdea.length > coachInputLimits.currentIdea) {
+    return `Current idea must be ${coachInputLimits.currentIdea} characters or fewer.`;
+  }
+
+  if (input.stuckPoint.length > coachInputLimits.stuckPoint) {
+    return `Where I am stuck must be ${coachInputLimits.stuckPoint} characters or fewer.`;
+  }
+
+  if (input.code.length > coachInputLimits.code) {
+    return `Optional code must be ${coachInputLimits.code} characters or fewer.`;
+  }
+
+  return "";
 }
 
 function normalizeProblemContext(value: unknown): CoachProblemContext | null {
@@ -111,4 +188,12 @@ function toTrimmedString(value: unknown) {
 
 function isHelpMode(value: string): value is CoachRequest["helpMode"] {
   return helpModes.some((mode) => mode === value);
+}
+
+function isAbortError(error: unknown) {
+  return (
+    error instanceof DOMException && error.name === "AbortError"
+  ) || (
+    error instanceof Error && error.name === "AbortError"
+  );
 }

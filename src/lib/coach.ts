@@ -7,6 +7,14 @@ export const helpModes = [
 
 export type HelpMode = (typeof helpModes)[number];
 
+export const coachInputLimits = {
+  problem: 120,
+  currentIdea: 2000,
+  stuckPoint: 2000,
+  code: 12000,
+  codeWarning: 8000,
+} as const;
+
 export type CoachRequest = {
   problem: string;
   currentIdea: string;
@@ -35,6 +43,7 @@ export type AgentTraceItem = {
 };
 
 export type CoachFeedback = {
+  modelUsed: string;
   patternGuess: string;
   hints: string[];
   bruteForceIdea: string;

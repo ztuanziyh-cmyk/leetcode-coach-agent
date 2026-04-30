@@ -35,6 +35,7 @@ export const reviewNoteAgentOutputSchema = z.object({
 });
 
 export const coachFeedbackSchema = z.object({
+  modelUsed: z.string(),
   patternGuess: z.string(),
   hints: z.array(z.string()),
   bruteForceIdea: z.string(),

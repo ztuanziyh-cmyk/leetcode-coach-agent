@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   type AgentTraceItem,
   type CoachFeedback,
   type CoachProblemContext,
   type CoachRequest,
+  coachInputLimits,
   helpModes,
   type HelpMode,
 } from "@/lib/coach";
@@ -43,8 +44,15 @@ export function CoachPanel() {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [saveMessage, setSaveMessage] = useState("");
+  const [configuredModel, setConfiguredModel] = useState("");
 
-  const canSubmit = problem.trim() && currentIdea.trim() && stuckPoint.trim();
+  const hasInputTooLong =
+    problem.length > coachInputLimits.problem ||
+    currentIdea.length > coachInputLimits.currentIdea ||
+    stuckPoint.length > coachInputLimits.stuckPoint ||
+    code.length > coachInputLimits.code;
+  const canSubmit = problem.trim() && currentIdea.trim() && stuckPoint.trim() && !hasInputTooLong;
+  const modelLabel = feedback?.modelUsed || configuredModel || "configured OpenAI model";
   const syncedProblems = useMemo(
     () => deriveTrackedProblemsFromSync(storedSync?.data),
     [storedSync],
@@ -68,11 +76,45 @@ export function CoachPanel() {
     ].join("\n");
   }, [feedback]);
 
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadCoachConfig() {
+      try {
+        const response = await fetch("/api/coach");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const body = (await response.json()) as { model?: string };
+
+        if (!ignore && body.model) {
+          setConfiguredModel(body.model);
+        }
+      } catch {
+        // The model name is helpful context, but coaching still works without this request.
+      }
+    }
+
+    loadCoachConfig();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!canSubmit) {
+    if (!problem.trim() || !currentIdea.trim() || !stuckPoint.trim()) {
       setError("Add the problem, your current idea, and where you are stuck.");
+      setRequestState("error");
+      return;
+    }
+
+    if (hasInputTooLong) {
+      setError("Shorten the over-limit fields before requesting coaching.");
       setRequestState("error");
       return;
     }
@@ -159,6 +201,10 @@ export function CoachPanel() {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.85fr)]">
       <form className="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleSubmit}>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+          Coach uses {modelLabel}. Long code or long prompts may increase API cost.
+        </div>
+
         <label className="block">
           <span className="text-sm font-medium text-slate-700">Problem title or slug</span>
           <input
@@ -169,8 +215,10 @@ export function CoachPanel() {
               setSaveMessage("");
             }}
             placeholder="two-sum"
+            maxLength={coachInputLimits.problem}
             className={inputClass}
           />
+          <CharacterCounter value={problem.length} max={coachInputLimits.problem} />
         </label>
 
         {matchedProblemContext ? (
@@ -187,8 +235,10 @@ export function CoachPanel() {
             onChange={(event) => setCurrentIdea(event.target.value)}
             rows={4}
             placeholder="Describe the approach you are considering."
+            maxLength={coachInputLimits.currentIdea}
             className={inputClass}
           />
+          <CharacterCounter value={currentIdea.length} max={coachInputLimits.currentIdea} />
         </label>
 
         <label className="block">
@@ -198,8 +248,10 @@ export function CoachPanel() {
             onChange={(event) => setStuckPoint(event.target.value)}
             rows={3}
             placeholder="Name the exact decision, edge case, or complexity issue."
+            maxLength={coachInputLimits.stuckPoint}
             className={inputClass}
           />
+          <CharacterCounter value={stuckPoint.length} max={coachInputLimits.stuckPoint} />
         </label>
 
         <label className="block">
@@ -209,8 +261,17 @@ export function CoachPanel() {
             onChange={(event) => setCode(event.target.value)}
             rows={7}
             spellCheck={false}
+            maxLength={coachInputLimits.code}
             className={`${inputClass} font-mono`}
           />
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <CharacterCounter value={code.length} max={coachInputLimits.code} />
+            {code.length > coachInputLimits.codeWarning ? (
+              <span className="text-xs font-medium text-amber-700">
+                Long code may increase API cost.
+              </span>
+            ) : null}
+          </div>
         </label>
 
         <label className="block">
@@ -231,7 +292,7 @@ export function CoachPanel() {
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="submit"
-            disabled={requestState === "loading"}
+            disabled={requestState === "loading" || !canSubmit}
             className="inline-flex rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
             {requestState === "loading" ? "Getting feedback..." : "Get coaching"}
@@ -305,6 +366,9 @@ export function CoachPanel() {
 
         {feedback && requestState !== "loading" ? (
           <div className="mt-6 space-y-4">
+            <p className="rounded-2xl bg-slate-50 px-4 py-3 text-xs font-medium text-slate-600">
+              Model used: {feedback.modelUsed}
+            </p>
             <FeedbackBlock title="Pattern guess" body={feedback.patternGuess} />
             <div>
               <h4 className="text-sm font-semibold text-slate-900">Hints</h4>
@@ -399,6 +463,20 @@ function AgentTracePanel({ trace }: { trace: AgentTraceItem[] }) {
         ))}
       </ol>
     </details>
+  );
+}
+
+function CharacterCounter({ value, max }: { value: number; max: number }) {
+  const overLimit = value > max;
+
+  return (
+    <p
+      className={`mt-2 text-right text-xs ${
+        overLimit ? "font-medium text-red-600" : "text-slate-500"
+      }`}
+    >
+      {value}/{max}
+    </p>
   );
 }
 
