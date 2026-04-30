@@ -1,46 +1,7 @@
-import OpenAI from "openai";
 import { NextResponse } from "next/server";
 
-import { type CoachFeedback, type CoachRequest, helpModes } from "@/lib/coach";
-
-const coachResponseSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    patternGuess: { type: "string" },
-    hints: {
-      type: "array",
-      items: { type: "string" },
-    },
-    bruteForceIdea: { type: "string" },
-    optimizedDirection: { type: "string" },
-    keyTakeaway: { type: "string" },
-    reviewNoteDraft: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        pattern: { type: "string" },
-        mistakeType: { type: "string" },
-        coreIdea: { type: "string" },
-        whyMissed: { type: "string" },
-        keyTakeaway: { type: "string" },
-      },
-      required: ["pattern", "mistakeType", "coreIdea", "whyMissed", "keyTakeaway"],
-    },
-  },
-  required: [
-    "patternGuess",
-    "hints",
-    "bruteForceIdea",
-    "optimizedDirection",
-    "keyTakeaway",
-    "reviewNoteDraft",
-  ],
-};
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { runCoachManager } from "@/lib/agents/coach-manager";
+import { type CoachProblemContext, type CoachRequest, helpModes } from "@/lib/coach";
 
 export async function POST(request: Request) {
   if (!process.env.OPENAI_API_KEY) {
@@ -68,35 +29,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const response = await client.responses.create({
-      model: process.env.OPENAI_COACH_MODEL ?? "gpt-4.1-mini",
-      instructions: [
-        "You are a LeetCode coach for deliberate practice and spaced review.",
-        "Return JSON only, matching the supplied schema.",
-        "Do not give the complete final solution, final code, or full proof unless the user explicitly asks for it.",
-        "Prefer Socratic hints, pattern recognition cues, complexity framing, and review-note wording.",
-        "Keep hints short and actionable. If code is provided, review the approach without rewriting the whole solution.",
-      ].join("\n"),
-      input: [
-        `Problem title or slug: ${payload.problem}`,
-        `Help mode: ${payload.helpMode}`,
-        `Current idea: ${payload.currentIdea}`,
-        `Where stuck: ${payload.stuckPoint}`,
-        payload.code ? `Optional code:\n${payload.code}` : "Optional code: not provided",
-      ].join("\n\n"),
-      max_output_tokens: 900,
-      store: false,
-      text: {
-        format: {
-          type: "json_schema",
-          name: "leetcode_coach_feedback",
-          strict: true,
-          schema: coachResponseSchema,
-        },
-      },
-    });
-
-    const feedback = JSON.parse(response.output_text) as CoachFeedback;
+    const feedback = await runCoachManager(payload);
     return NextResponse.json({ data: feedback }, { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Coach request failed.";
@@ -115,6 +48,7 @@ function normalizeCoachRequest(value: unknown): CoachRequest | null {
   const stuckPoint = toTrimmedString(input.stuckPoint);
   const code = toTrimmedString(input.code);
   const helpMode = toTrimmedString(input.helpMode);
+  const problemContext = normalizeProblemContext(input.problemContext);
 
   if (!problem || !currentIdea || !stuckPoint || !isHelpMode(helpMode)) {
     return null;
@@ -126,6 +60,48 @@ function normalizeCoachRequest(value: unknown): CoachRequest | null {
     stuckPoint: stuckPoint.slice(0, 2000),
     code: code ? code.slice(0, 8000) : undefined,
     helpMode,
+    problemContext: problemContext ?? undefined,
+  };
+}
+
+function normalizeProblemContext(value: unknown): CoachProblemContext | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const input = value as Record<string, unknown>;
+  const title = toTrimmedString(input.title);
+  const slug = toTrimmedString(input.slug);
+  const questionFrontendId = toTrimmedString(input.questionFrontendId);
+  const difficulty = toTrimmedString(input.difficulty);
+  const reviewState = toTrimmedString(input.reviewState);
+  const existingPattern = toTrimmedString(input.existingPattern);
+  const nextReviewDate = toTrimmedString(input.nextReviewDate);
+  const confidence =
+    typeof input.confidence === "number" && Number.isFinite(input.confidence)
+      ? input.confidence
+      : null;
+  const topics = Array.isArray(input.topics)
+    ? input.topics
+        .map((topic) => toTrimmedString(topic))
+        .filter(Boolean)
+        .slice(0, 12)
+    : undefined;
+
+  if (!title && !slug) {
+    return null;
+  }
+
+  return {
+    title: title ? title.slice(0, 160) : undefined,
+    slug: slug ? slug.slice(0, 160) : undefined,
+    questionFrontendId: questionFrontendId ? questionFrontendId.slice(0, 40) : undefined,
+    difficulty: difficulty ? difficulty.slice(0, 20) : undefined,
+    topics,
+    reviewState: reviewState ? reviewState.slice(0, 40) : undefined,
+    confidence,
+    existingPattern: existingPattern ? existingPattern.slice(0, 120) : undefined,
+    nextReviewDate: nextReviewDate ? nextReviewDate.slice(0, 40) : undefined,
   };
 }
 

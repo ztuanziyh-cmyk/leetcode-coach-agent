@@ -2,13 +2,24 @@
 
 import { useMemo, useState } from "react";
 
-import { type CoachFeedback, type CoachRequest, helpModes, type HelpMode } from "@/lib/coach";
+import {
+  type AgentTraceItem,
+  type CoachFeedback,
+  type CoachProblemContext,
+  type CoachRequest,
+  helpModes,
+  type HelpMode,
+} from "@/lib/coach";
 import {
   buildInitialLocalReviewNote,
+  getReviewNoteSummary,
   readLocalReviewNotes,
   saveLocalReviewNote,
 } from "@/lib/local-review-notes";
-import type { LocalReviewNote } from "@/lib/types";
+import { deriveTrackedProblemsFromSync } from "@/lib/local-synced-problems";
+import type { LocalReviewNote, ReviewNoteSummary, SyncedTrackedProblem } from "@/lib/types";
+import { useLocalReviewNotes } from "@/lib/use-local-review-notes";
+import { useLocalSyncResult } from "@/lib/use-local-sync-result";
 
 const inputClass =
   "mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100";
@@ -19,6 +30,8 @@ type RequestState = "idle" | "loading" | "success" | "error";
 type SaveState = "idle" | "saved" | "warning";
 
 export function CoachPanel() {
+  const storedSync = useLocalSyncResult();
+  const localReviewNotes = useLocalReviewNotes();
   const [problem, setProblem] = useState("");
   const [currentIdea, setCurrentIdea] = useState("");
   const [stuckPoint, setStuckPoint] = useState("");
@@ -32,6 +45,14 @@ export function CoachPanel() {
   const [saveMessage, setSaveMessage] = useState("");
 
   const canSubmit = problem.trim() && currentIdea.trim() && stuckPoint.trim();
+  const syncedProblems = useMemo(
+    () => deriveTrackedProblemsFromSync(storedSync?.data),
+    [storedSync],
+  );
+  const matchedProblemContext = useMemo(
+    () => findMatchedProblemContext(problem, syncedProblems, localReviewNotes),
+    [problem, syncedProblems, localReviewNotes],
+  );
 
   const reviewNoteText = useMemo(() => {
     if (!feedback) {
@@ -62,6 +83,7 @@ export function CoachPanel() {
       stuckPoint: stuckPoint.trim(),
       code: code.trim() || undefined,
       helpMode,
+      problemContext: matchedProblemContext?.context,
     };
 
     setRequestState("loading");
@@ -150,6 +172,13 @@ export function CoachPanel() {
             className={inputClass}
           />
         </label>
+
+        {matchedProblemContext ? (
+          <ProblemContextCard
+            problem={matchedProblemContext.problem}
+            reviewSummary={matchedProblemContext.reviewSummary}
+          />
+        ) : null}
 
         <label className="block">
           <span className="text-sm font-medium text-slate-700">Current idea</span>
@@ -287,6 +316,9 @@ export function CoachPanel() {
                 ))}
               </ul>
             </div>
+            {feedback.codeFeedback ? (
+              <FeedbackBlock title="Code feedback" body={feedback.codeFeedback} />
+            ) : null}
             <FeedbackBlock title="Brute-force idea" body={feedback.bruteForceIdea} />
             <FeedbackBlock title="Optimized direction" body={feedback.optimizedDirection} />
             <FeedbackBlock title="Key takeaway" body={feedback.keyTakeaway} />
@@ -303,10 +335,70 @@ export function CoachPanel() {
                 <p className="mt-3 text-xs text-red-200">Clipboard access failed.</p>
               ) : null}
             </div>
+            {feedback.agentTrace?.length ? (
+              <AgentTracePanel trace={feedback.agentTrace} />
+            ) : null}
           </div>
         ) : null}
       </section>
     </div>
+  );
+}
+
+function ProblemContextCard({
+  problem,
+  reviewSummary,
+}: {
+  problem: SyncedTrackedProblem;
+  reviewSummary: ReviewNoteSummary;
+}) {
+  const details = [
+    problem.questionFrontendId ? `#${problem.questionFrontendId}` : "",
+    problem.difficulty,
+    reviewSummary.reviewState,
+    reviewSummary.confidence ? `Confidence ${reviewSummary.confidence}` : "",
+    reviewSummary.pattern ? `Pattern: ${reviewSummary.pattern}` : "",
+    reviewSummary.nextReviewDate ? `Next: ${reviewSummary.nextReviewDate}` : "",
+  ].filter(Boolean);
+
+  return (
+    <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-slate-700">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-semibold text-slate-950">{problem.title}</span>
+        {details.map((detail) => (
+          <span key={detail} className="rounded-full bg-white px-2.5 py-1 text-xs text-slate-600">
+            {detail}
+          </span>
+        ))}
+      </div>
+      {problem.topics.length ? (
+        <p className="mt-2 leading-6 text-slate-600">{problem.topics.join(" • ")}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function AgentTracePanel({ trace }: { trace: AgentTraceItem[] }) {
+  return (
+    <details className="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+      <summary className="cursor-pointer font-semibold text-slate-900">Agent trace</summary>
+      <ol className="mt-3 grid gap-2">
+        {trace.map((item) => (
+          <li
+            key={`${item.agentName}-${item.status}`}
+            className="grid gap-1 rounded-2xl bg-slate-50 px-4 py-3"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium text-slate-950">{item.agentName}</span>
+              <span className="rounded-full bg-white px-2 py-0.5 text-xs capitalize text-slate-600">
+                {item.status}
+              </span>
+            </div>
+            <p className="leading-6 text-slate-600">{item.summary}</p>
+          </li>
+        ))}
+      </ol>
+    </details>
   );
 }
 
@@ -353,4 +445,45 @@ function normalizeProblemSlug(value: string) {
     .replace(/['']/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function findMatchedProblemContext(
+  problemInput: string,
+  syncedProblems: SyncedTrackedProblem[],
+  localReviewNotes: Record<string, LocalReviewNote>,
+) {
+  const normalizedInput = normalizeProblemSlug(problemInput);
+
+  if (!normalizedInput) {
+    return null;
+  }
+
+  const problem = syncedProblems.find(
+    (candidate) =>
+      candidate.slug === normalizedInput ||
+      normalizeProblemSlug(candidate.title) === normalizedInput,
+  );
+
+  if (!problem) {
+    return null;
+  }
+
+  const reviewSummary = getReviewNoteSummary(localReviewNotes[problem.slug]);
+  const context: CoachProblemContext = {
+    title: problem.title,
+    slug: problem.slug,
+    questionFrontendId: problem.questionFrontendId,
+    difficulty: problem.difficulty,
+    topics: problem.topics,
+    reviewState: reviewSummary.reviewState,
+    confidence: reviewSummary.confidence,
+    existingPattern: reviewSummary.pattern || undefined,
+    nextReviewDate: reviewSummary.nextReviewDate || undefined,
+  };
+
+  return {
+    problem,
+    reviewSummary,
+    context,
+  };
 }

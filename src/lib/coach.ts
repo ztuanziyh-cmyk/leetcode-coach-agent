@@ -13,6 +13,25 @@ export type CoachRequest = {
   stuckPoint: string;
   code?: string;
   helpMode: HelpMode;
+  problemContext?: CoachProblemContext;
+};
+
+export type CoachProblemContext = {
+  title?: string;
+  slug?: string;
+  questionFrontendId?: string;
+  difficulty?: string;
+  topics?: string[];
+  reviewState?: string;
+  confidence?: number | null;
+  existingPattern?: string;
+  nextReviewDate?: string;
+};
+
+export type AgentTraceItem = {
+  agentName: string;
+  status: "completed" | "skipped" | "failed";
+  summary: string;
 };
 
 export type CoachFeedback = {
@@ -21,6 +40,8 @@ export type CoachFeedback = {
   bruteForceIdea: string;
   optimizedDirection: string;
   keyTakeaway: string;
+  codeFeedback?: string;
+  agentTrace?: AgentTraceItem[];
   reviewNoteDraft: {
     pattern: string;
     mistakeType: string;
