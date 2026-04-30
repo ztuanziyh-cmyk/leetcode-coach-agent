@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { CoachFeedback, CoachRequest } from "@/lib/coach";
+import type { StudyPlanResponse } from "@/lib/study-plan";
 
 export const coachModel = process.env.OPENAI_COACH_MODEL ?? "gpt-4.1-mini";
 
@@ -58,6 +59,61 @@ export type PatternAgentOutput = z.infer<typeof patternAgentOutputSchema>;
 export type HintAgentOutput = z.infer<typeof hintAgentOutputSchema>;
 export type CodeReviewAgentOutput = z.infer<typeof codeReviewAgentOutputSchema>;
 export type ReviewNoteAgentOutput = z.infer<typeof reviewNoteAgentOutputSchema>;
+
+export const studyPlannerOutputSchema = z.object({
+  weakTopicSummary: z.string(),
+  priorities: z.array(z.string()).max(5),
+  dailyPlan: z
+    .array(
+      z.object({
+        day: z.string(),
+        focus: z.string(),
+        items: z
+          .array(
+            z.object({
+              title: z.string(),
+              slug: z.string().optional(),
+              source: z.enum(["tracked", "suggested"]),
+              action: z.enum(["review", "practice", "new-practice"]),
+              reason: z.string(),
+            }),
+          )
+          .max(3),
+      }),
+    )
+    .max(7),
+  trackedProblemsUsed: z
+    .array(
+      z.object({
+        title: z.string(),
+        slug: z.string().optional(),
+        reason: z.string(),
+        topics: z.array(z.string()).optional(),
+      }),
+    )
+    .max(8),
+  suggestedPracticeProblems: z
+    .array(
+      z.object({
+        title: z.string(),
+        slug: z.string().optional(),
+        reason: z.string(),
+        topics: z.array(z.string()).optional(),
+      }),
+    )
+    .max(5),
+  reviewStrategy: z.string(),
+  agentTrace: z.array(
+    z.object({
+      agentName: z.string(),
+      status: z.enum(["completed", "skipped", "failed"]),
+      summary: z.string(),
+    }),
+  ),
+  modelUsed: z.string(),
+}) satisfies z.ZodType<StudyPlanResponse>;
+
+export type StudyPlannerOutput = z.infer<typeof studyPlannerOutputSchema>;
 
 export function buildCoachContext(input: CoachAgentInput) {
   return [
