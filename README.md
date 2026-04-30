@@ -1,41 +1,36 @@
 # LeetCode Coach Agent
 
-LeetCode Coach Agent is a practical LLM agent and learning assistant project built from a LeetCode review tracker. It helps users sync public LeetCode activity, track review notes, schedule problem reviews, and use an LLM coach for hint-first learning.
+LeetCode Coach Agent is a vibe coding project that grew from a LeetCode review tracker into a multi-agent LeetCode learning assistant. It helps users sync public LeetCode activity, track review notes, schedule problem reviews, get hint-first coaching on individual problems, and generate weak-topic study plans from local tracker data.
 
-The app turns public LeetCode submissions into a lightweight review workflow: sync a public username, import recent submissions, enrich problems with difficulty and topics, review progress over time, and ask the coach for structured guidance when stuck.
+The app combines a practical review workflow with LLM-powered coaching: public username sync, recent submission tracking, problem metadata enrichment, local notes and review history, an OpenAI-powered Coach Agent, a Weak Topic Study Planner Agent, manual Supabase cloud backup/restore, and Vercel deployment.
 
 ## Core Features
 
-- Public LeetCode username sync
+- LeetCode public username sync
 - Recent submissions tracking
 - Problem metadata enrichment with difficulty and topics
-- Problem list search, filter, and sort
-- Local review notes
+- Problem search, filter, and sort
+- Review notes saved locally
 - Review state and review history
 - Automatic next review scheduling
-- Stats page
+- Stats and weak topic overview
 - JSON export/import
 - Supabase manual cloud backup/restore
-- LLM Coach Agent powered by the OpenAI API
-- Hint-first coaching instead of directly giving final answers
-- Generated review note draft
-- Save coach draft into existing review notes
-- Vercel deployment
+- OpenAI-powered Coach Agent
+- Agent trace for coach and planner runs
+- Save coach draft to review notes
+- Weak Topic Study Planner Agent
 
-## LLM Coach Agent
+## Multi-Agent Architecture
 
-The coach is designed to guide thinking instead of immediately giving the final solution. Users enter a problem title or slug, their current idea, where they are stuck, and optional code.
+The coach system is organized around small specialist agents coordinated by a manager:
 
-The coach returns:
-
-- Pattern guess
-- Layered hints
-- Brute-force idea
-- Optimized direction
-- Key takeaway
-- Review note draft
-
-The generated review note draft can be saved into the existing problem notes, so coaching sessions become part of the review workflow.
+- Coach Manager orchestrates single-problem coaching.
+- Pattern Agent identifies the likely problem-solving pattern.
+- Hint Agent generates layered, hint-first guidance.
+- Code Review Agent reviews optional user code without jumping straight to a full solution.
+- Review Note Agent creates structured review note drafts.
+- Study Planner Agent builds short study plans from weak topics, due reviews, confidence, mistake types, and patterns.
 
 ## Vibe Coding Note
 
@@ -53,9 +48,10 @@ This project was built through an iterative vibe coding workflow:
 - TypeScript
 - Tailwind CSS
 - Supabase
+- OpenAI API
+- OpenAI Agents SDK
 - `localStorage`
 - LeetCode public GraphQL
-- OpenAI API
 - Vercel
 
 ## Local Setup
@@ -82,39 +78,21 @@ OPENAI_COACH_MODEL=
 
 Security notes:
 
-- `OPENAI_API_KEY` must stay server-side only.
 - Do not commit `.env.local`.
-- Do not expose the OpenAI key with a `NEXT_PUBLIC_` prefix.
-
-## Usage Flow
-
-1. Go to `/sync`.
-2. Enter a public LeetCode username.
-3. Sync public activity.
-4. Review and organize problems in `/problems`.
-5. Add local notes and review state on problem detail pages.
-6. Use `/review` for scheduled review.
-7. Use the coach when stuck, then save useful drafts back into review notes.
-
-## Data and Privacy
-
-- No LeetCode password is required.
-- LeetCode sync uses public data only.
-- Data is stored locally in the browser by default.
-- Optional Supabase backup/restore uses your configured Supabase project.
-- OpenAI API usage may incur cost.
+- `OPENAI_API_KEY` must stay server-side only.
+- Do not use a `NEXT_PUBLIC_` prefix for the OpenAI API key.
 
 ## Current Limitations
 
-- Supabase cloud backup/restore is manual, not automatic sync yet.
+- Supabase backup/restore is manual, not automatic sync.
 - LeetCode sync uses public data only.
-- LLM coach quality depends on user input.
-- API usage may incur cost.
+- Coach and planner quality depends on user input and local tracker data.
+- OpenAI API usage may cost money.
 
 ## Roadmap
 
 - Automatic cloud sync
-- Deeper coach integration with review history
-- Weak-topic-based problem recommendation
-- Multi-agent coach workflow
-- Better mobile UI
+- Stronger personalization from review history
+- Better mobile layout
+- Richer multi-agent planning
+- Optional MCP/tool integrations later
