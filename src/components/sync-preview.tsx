@@ -2,11 +2,8 @@
 
 import { useState } from "react";
 
-import { Badge } from "@/components/badge";
 import { Card } from "@/components/card";
 import { DataSourceBadge } from "@/components/data-source-badge";
-import { LiveSubmissionList } from "@/components/live-submission-list";
-import { StatCard } from "@/components/stat-card";
 import type { LeetCodeSyncResult } from "@/lib/leetcode";
 import {
   clearLocalSyncResult,
@@ -69,7 +66,7 @@ export function SyncPreview() {
   return (
     <div className="space-y-6">
       <Card
-        title="Public username sync"
+        title="LeetCode sync"
         subtitle="Fetch a public LeetCode profile without login or cookies, then store the latest result locally in this browser."
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -87,7 +84,7 @@ export function SyncPreview() {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex rounded-full bg-sky-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:text-white"
             >
               {loading ? "Syncing..." : "Sync preview"}
             </button>
@@ -124,64 +121,24 @@ export function SyncPreview() {
       ) : null}
 
       {currentResult ? (
-        <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <StatCard
-              label="Total solved"
-              value={currentResult.totalSolved}
-              detail={`${currentResult.easySolved} easy • ${currentResult.mediumSolved} medium • ${currentResult.hardSolved} hard`}
-            />
-            <StatCard
-              label="Ranking"
-              value={currentResult.ranking ?? "—"}
-              detail="Live public ranking from LeetCode profile data."
-            />
-            <StatCard
-              label="Recent submissions"
-              value={currentResult.recentSubmissions.length}
-              detail="Returned from the public recent submission list when available."
-            />
-            <StatCard
-              label="Metadata enriched"
-              value={Object.keys(currentResult.problemMetadataBySlug ?? {}).length}
-              detail="Recently synced problems enriched with question metadata."
-            />
+        <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+          <div className="flex flex-wrap items-center gap-2">
+            <DataSourceBadge live={Boolean(currentResult)} compact />
+            <p className="font-medium text-slate-950">
+              {currentResult.realName || currentResult.username}
+            </p>
+            <p>@{currentResult.username}</p>
+            <p>
+              Last synced{" "}
+              {storedSync?.syncedAt?.slice(0, 16).replace("T", " ") ?? "just now"}
+            </p>
           </div>
-
-          <Card title="Result summary" subtitle="This is the live payload normalized for the app.">
-            <div className="flex flex-col gap-5 md:flex-row md:items-center">
-              {currentResult.userAvatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={currentResult.userAvatar}
-                  alt={`${currentResult.username} avatar`}
-                  className="h-16 w-16 rounded-2xl border border-slate-200 object-cover"
-                />
-              ) : null}
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-xl font-semibold tracking-tight text-slate-950">
-                    {currentResult.realName || currentResult.username}
-                  </h3>
-                  <Badge tone="good">@{currentResult.username}</Badge>
-                  <DataSourceBadge live={Boolean(currentResult)} compact />
-                </div>
-                <p className="text-sm leading-7 text-slate-600">
-                  {usingStoredSync
-                    ? "This sync result was restored from local data and is available across the app."
-                    : "The latest successful sync is saved locally and is now available across the app."}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card
-            title="Recent submissions preview"
-            subtitle="The public feed can contain accepted and non-accepted attempts."
-          >
-            <LiveSubmissionList submissions={currentResult.recentSubmissions} limit={12} />
-          </Card>
-        </>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            <p>Metadata enriched: {Object.keys(currentResult.problemMetadataBySlug ?? {}).length}</p>
+            <p>Recent submissions: {currentResult.recentSubmissions.length}</p>
+            <p>{usingStoredSync ? "Loaded from local data." : "Saved locally."}</p>
+          </div>
+        </div>
       ) : null}
     </div>
   );

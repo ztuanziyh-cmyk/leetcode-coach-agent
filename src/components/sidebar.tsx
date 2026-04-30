@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 
 const navigation = [
   { href: "/", label: "Dashboard" },
-  { href: "/sync", label: "Sync" },
   { href: "/problems", label: "Problems" },
   { href: "/submissions", label: "Submissions" },
   { href: "/review", label: "Daily Review" },
@@ -27,9 +26,6 @@ export function Sidebar() {
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
             Review Tracker
           </h1>
-          <p className="mt-2 max-w-56 text-sm leading-6 text-slate-600">
-            Track solved problems, review notes, and daily practice in one place.
-          </p>
         </div>
       </div>
 
@@ -44,7 +40,7 @@ export function Sidebar() {
               href={item.href}
               className={`rounded-2xl px-4 py-3 text-sm font-medium transition ${
                 isActive
-                  ? "bg-slate-950 text-white shadow-sm"
+                  ? "bg-sky-700 text-white shadow-sm hover:bg-sky-800"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
@@ -53,16 +49,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-
-      <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          CURRENT STATUS
-        </p>
-        <p className="mt-2 text-sm leading-6 text-slate-700">
-          Live LeetCode public sync is enabled. Data and review notes are stored locally in this
-          browser. No account login or cloud sync yet.
-        </p>
-      </div>
     </aside>
   );
 }

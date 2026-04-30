@@ -106,8 +106,8 @@ export function StudyPlannerPanel() {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-      <div className="space-y-6">
+    <div className="space-y-6">
+      <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Planner controls" subtitle="Uses local tracker context only after you generate.">
           <form className="space-y-5" onSubmit={generatePlan}>
             <SegmentedControl
@@ -159,7 +159,7 @@ export function StudyPlannerPanel() {
             <button
               type="submit"
               disabled={!canGenerate}
-              className="inline-flex rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              className="inline-flex rounded-full bg-sky-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:text-white"
             >
               {requestState === "loading" ? "Generating plan..." : "Generate study plan"}
             </button>
@@ -178,7 +178,7 @@ export function StudyPlannerPanel() {
         </Card>
       </div>
 
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
             Planner Output
@@ -252,7 +252,7 @@ function SegmentedControl<TValue extends string | number>({
 
 function DataSummary({ summary }: { summary: PlannerDataSummary }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
         <SummaryNumber label="Tracked" value={summary.totalTrackedProblems} />
         <SummaryNumber label="Due" value={summary.dueReviewCount} />
@@ -296,7 +296,7 @@ function DataSummary({ summary }: { summary: PlannerDataSummary }) {
 
 function SummaryNumber({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl bg-slate-50 p-4">
+    <div className="rounded-2xl bg-slate-50 p-3">
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
       <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
     </div>
@@ -332,21 +332,23 @@ function SummaryList({
 
 function PlanResult({ plan }: { plan: StudyPlanResponse }) {
   return (
-    <div className="mt-6 space-y-5">
-      <p className="rounded-2xl bg-slate-50 px-4 py-3 text-xs font-medium text-slate-600">
-        Model used: {plan.modelUsed}
-      </p>
+    <div className="mt-5 space-y-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge>Model: {plan.modelUsed}</Badge>
+      </div>
       <OutputBlock title="Weak topic summary" body={plan.weakTopicSummary} />
-      <ProblemSection
-        title="From your tracker"
-        emptyText="No tracked problems were selected by the planner."
-        problems={plan.trackedProblemsUsed}
-      />
-      <ProblemSection
-        title="Suggested new practice"
-        emptyText="No new practice suggestions were needed."
-        problems={plan.suggestedPracticeProblems}
-      />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ProblemSection
+          title="From your tracker"
+          emptyText="No tracked problems were selected by the planner."
+          problems={plan.trackedProblemsUsed}
+        />
+        <ProblemSection
+          title="Suggested new practice"
+          emptyText="No new practice suggestions were needed."
+          problems={plan.suggestedPracticeProblems}
+        />
+      </div>
       <div>
         <h4 className="text-sm font-semibold text-slate-900">Priorities</h4>
         <ul className="mt-2 grid gap-2 text-sm leading-6 text-slate-700">
@@ -359,11 +361,11 @@ function PlanResult({ plan }: { plan: StudyPlanResponse }) {
       </div>
       <div>
         <h4 className="text-sm font-semibold text-slate-900">Daily plan</h4>
-        <div className="mt-2 grid gap-3">
+        <div className="mt-2 grid gap-3 xl:grid-cols-2">
           {plan.dailyPlan.map((day) => (
-            <div key={day.day} className="rounded-2xl border border-slate-200 p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold text-slate-950">{day.day}</span>
+            <section key={day.day} className="rounded-2xl border border-slate-200 bg-white p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h5 className="font-semibold text-slate-950">{day.day}</h5>
                 <Badge>{day.focus}</Badge>
               </div>
               <div className="mt-3 grid gap-2">
@@ -371,11 +373,11 @@ function PlanResult({ plan }: { plan: StudyPlanResponse }) {
                   <PlanItemCard key={`${day.day}-${item.title}-${item.action}`} item={item} />
                 ))}
               </div>
-            </div>
+            </section>
           ))}
         </div>
       </div>
-      <OutputBlock title="Review strategy" body={plan.reviewStrategy} />
+      <ReviewStrategy text={plan.reviewStrategy} />
       <details className="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
         <summary className="cursor-pointer font-semibold text-slate-900">Agent trace</summary>
         <ol className="mt-3 grid gap-2">
@@ -404,10 +406,13 @@ function ProblemSection({
   problems: StudyPlanProblem[];
 }) {
   return (
-    <div>
-      <h4 className="text-sm font-semibold text-slate-900">{title}</h4>
+    <section className="rounded-2xl border border-slate-200 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h4 className="text-sm font-semibold text-slate-900">{title}</h4>
+        <Badge>{problems.length}</Badge>
+      </div>
       {problems.length ? (
-        <div className="mt-2 grid gap-2">
+        <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
           {problems.map((problem) => (
             <div
               key={`${problem.slug ?? problem.title}-${problem.reason}`}
@@ -429,21 +434,47 @@ function ProblemSection({
           {emptyText}
         </p>
       )}
-    </div>
+    </section>
   );
 }
 
 function PlanItemCard({ item }: { item: StudyPlanItem }) {
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-medium text-slate-950">{item.title}</span>
-        <Badge tone={item.source === "tracked" ? "good" : "warn"}>{item.source}</Badge>
-        <Badge>{item.action}</Badge>
-        {item.slug ? <Badge>{item.slug}</Badge> : null}
+    <div className="rounded-2xl bg-slate-50 px-3 py-2.5 text-sm leading-6 text-slate-700">
+      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+        <div className="min-w-0">
+          <p className="font-medium text-slate-950">{item.title}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            {item.slug ? <Badge>{item.slug}</Badge> : null}
+            <p className="text-slate-600">{item.reason}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 sm:justify-end">
+          <Badge tone={item.source === "tracked" ? "good" : "warn"}>{item.source}</Badge>
+          <Badge>{item.action}</Badge>
+        </div>
       </div>
-      <p className="mt-1">{item.reason}</p>
     </div>
+  );
+}
+
+function ReviewStrategy({ text }: { text: string }) {
+  const items = text
+    .split(/\n|•|- /)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-4">
+      <h4 className="text-sm font-semibold text-slate-900">Review strategy</h4>
+      <ul className="mt-2 grid gap-2 text-sm leading-6 text-slate-700">
+        {(items.length ? items : [text]).map((item) => (
+          <li key={item} className="rounded-2xl bg-slate-50 px-4 py-3">
+            {item}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

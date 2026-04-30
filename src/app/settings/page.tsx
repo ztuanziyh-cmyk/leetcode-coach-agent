@@ -5,8 +5,8 @@ export default function SettingsPage() {
   return (
     <PageShell
       eyebrow="Settings"
-      title="Backup and restore"
-      description="Manage local backups, optional Supabase cloud backups, and browser data for this workspace."
+      title="Settings"
+      description="Manage LeetCode sync, local backups, optional Supabase cloud backups, and browser data for this workspace."
     >
       <SettingsOverview />
     </PageShell>

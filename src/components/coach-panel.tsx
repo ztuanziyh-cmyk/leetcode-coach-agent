@@ -293,7 +293,7 @@ export function CoachPanel() {
           <button
             type="submit"
             disabled={requestState === "loading" || !canSubmit}
-            className="inline-flex rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            className="inline-flex rounded-full bg-sky-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:text-white"
           >
             {requestState === "loading" ? "Getting feedback..." : "Get coaching"}
           </button>
@@ -316,7 +316,7 @@ export function CoachPanel() {
               <button
                 type="button"
                 onClick={saveDraftToReviewNotes}
-                className="rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                className="rounded-full bg-sky-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-sky-800"
               >
                 Save draft to review notes
               </button>
@@ -369,26 +369,37 @@ export function CoachPanel() {
             <p className="rounded-2xl bg-slate-50 px-4 py-3 text-xs font-medium text-slate-600">
               Model used: {feedback.modelUsed}
             </p>
-            <FeedbackBlock title="Pattern guess" body={feedback.patternGuess} />
-            <div>
+            <section className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
+              <h4 className="text-sm font-semibold text-slate-950">Pattern guess</h4>
+              <p className="mt-2 text-sm leading-6 text-slate-700">{feedback.patternGuess}</p>
+            </section>
+            <section className="rounded-2xl border border-slate-200 p-4">
               <h4 className="text-sm font-semibold text-slate-900">Hints</h4>
-              <ul className="mt-2 grid gap-2 text-sm leading-6 text-slate-700">
-                {feedback.hints.map((hint) => (
-                  <li key={hint} className="rounded-2xl bg-slate-50 px-4 py-3">
-                    {hint}
+              <ol className="mt-3 grid gap-2 text-sm leading-6 text-slate-700">
+                {feedback.hints.map((hint, index) => (
+                  <li key={hint} className="flex gap-3 rounded-2xl bg-slate-50 px-4 py-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold text-sky-700">
+                      {index + 1}
+                    </span>
+                    <span>{hint}</span>
                   </li>
                 ))}
-              </ul>
-            </div>
+              </ol>
+            </section>
             {feedback.codeFeedback ? (
               <FeedbackBlock title="Code feedback" body={feedback.codeFeedback} />
             ) : null}
-            <FeedbackBlock title="Brute-force idea" body={feedback.bruteForceIdea} />
-            <FeedbackBlock title="Optimized direction" body={feedback.optimizedDirection} />
-            <FeedbackBlock title="Key takeaway" body={feedback.keyTakeaway} />
-            <div className="rounded-2xl border border-slate-200 bg-slate-950 p-4 text-sm leading-6 text-white">
-              <h4 className="font-semibold">Review note draft</h4>
-              <dl className="mt-3 grid gap-3">
+            <div className="grid gap-4 xl:grid-cols-2">
+              <FeedbackBlock title="Brute-force idea" body={feedback.bruteForceIdea} />
+              <FeedbackBlock title="Optimized direction" body={feedback.optimizedDirection} />
+            </div>
+            <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <h4 className="text-sm font-semibold text-emerald-950">Key takeaway</h4>
+              <p className="mt-2 text-sm leading-6 text-emerald-800">{feedback.keyTakeaway}</p>
+            </section>
+            <div className="rounded-2xl border border-slate-200 bg-slate-900 p-4 text-sm leading-6 text-white">
+              <h4 className="font-semibold text-white">Review note draft</h4>
+              <dl className="mt-3 grid gap-2">
                 <DraftField label="Pattern" value={feedback.reviewNoteDraft.pattern} />
                 <DraftField label="Mistake type" value={feedback.reviewNoteDraft.mistakeType} />
                 <DraftField label="Core idea" value={feedback.reviewNoteDraft.coreIdea} />
@@ -482,12 +493,10 @@ function CharacterCounter({ value, max }: { value: number; max: number }) {
 
 function FeedbackBlock({ title, body }: { title: string; body: string }) {
   return (
-    <div>
+    <section className="rounded-2xl border border-slate-200 bg-white p-4">
       <h4 className="text-sm font-semibold text-slate-900">{title}</h4>
-      <p className="mt-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
-        {body}
-      </p>
-    </div>
+      <p className="mt-2 text-sm leading-6 text-slate-700">{body}</p>
+    </section>
   );
 }
 

@@ -6,6 +6,7 @@ import type { Session } from "@supabase/supabase-js";
 
 import { Card } from "@/components/card";
 import { DataSourceBadge } from "@/components/data-source-badge";
+import { SyncPreview } from "@/components/sync-preview";
 import {
   applyLocalAppBackup,
   buildLocalAppBackup,
@@ -307,72 +308,66 @@ export function SettingsOverview() {
 
   return (
     <div className="space-y-6">
-      <Card
-        title="Local data summary"
-        subtitle="Only LeetCode Review Tracker localStorage keys are included in backup and restore."
-      >
-        <div className="space-y-4 text-sm text-slate-700">
-          <div className="flex flex-wrap items-center gap-3">
-            <DataSourceBadge live={Boolean(storedSync)} />
-            <p>Sync data: {storedSync ? "Exists" : "Missing"}</p>
-            <p>Review notes: {reviewNotesCount}</p>
-            <p>Review history: {reviewHistoryCount}</p>
-          </div>
-          <p>
-            Last synced: {storedSync?.syncedAt?.slice(0, 16).replace("T", " ") ?? "Never"}
-          </p>
-        </div>
-      </Card>
+      <SyncPreview />
 
-      <Card
-        title="Local data backup"
-        subtitle="Export or restore sync data, review notes, review history, and other app-specific localStorage data for this project."
-      >
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={handleExportJson}
-              className="rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
-            >
-              Export JSON
-            </button>
-
-            <label className="inline-flex cursor-pointer rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
-              Import JSON
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/json,.json"
-                onChange={handleImportJson}
-                className="hidden"
-              />
-            </label>
-
-            <button
-              type="button"
-              onClick={handleClearAllLocalData}
-              className="rounded-full border border-rose-300 bg-white px-5 py-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
-            >
-              Clear all local app data
-            </button>
-          </div>
-
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-            <p>Backup format includes `version`, `exportedAt`, and a `data` object.</p>
-            <p className="mt-2">
-              The export does not include browser cookies, unrelated localStorage keys, passwords,
-              or tokens.
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card title="Local data summary">
+          <div className="space-y-3 text-sm text-slate-700">
+            <div className="flex flex-wrap items-center gap-3">
+              <DataSourceBadge live={Boolean(storedSync)} />
+              <p>Sync data: {storedSync ? "Exists" : "Missing"}</p>
+              <p>Review notes: {reviewNotesCount}</p>
+              <p>Review history: {reviewHistoryCount}</p>
+            </div>
+            <p>
+              Last synced: {storedSync?.syncedAt?.slice(0, 16).replace("T", " ") ?? "Never"}
             </p>
           </div>
+        </Card>
 
-          {localStatus ? <p className="text-sm text-slate-600">{localStatus}</p> : null}
-        </div>
-      </Card>
+        <Card title="Local data backup">
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleExportJson}
+                className="rounded-full bg-sky-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-sky-800"
+              >
+                Export JSON
+              </button>
+
+              <label className="inline-flex cursor-pointer rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                Import JSON
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  onChange={handleImportJson}
+                  className="hidden"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={handleClearAllLocalData}
+                className="rounded-full border border-rose-300 bg-white px-5 py-3 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+              >
+                Clear all local app data
+              </button>
+            </div>
+
+            <p className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+              Export includes app localStorage data only. It does not include passwords or tokens.
+            </p>
+
+            {localStatus ? <p className="text-sm text-slate-600">{localStatus}</p> : null}
+          </div>
+        </Card>
+      </div>
 
       <Card
         title="Supabase cloud backup"
-        subtitle="Optional cloud backup and restore for the same local data snapshot used by JSON export and import."
+        subtitle="Optional backup and restore for the same local snapshot used by JSON export."
       >
         <div className="space-y-4">
           <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
@@ -407,9 +402,7 @@ export function SettingsOverview() {
             ) : (
               <>
                 <p className="font-medium text-slate-950">Not signed in</p>
-                <p className="mt-2">
-                  Send a magic link to sign in before backing up or restoring cloud data.
-                </p>
+                <p className="mt-2">Sign in before backing up or restoring cloud data.</p>
               </>
             )}
           </div>
@@ -426,7 +419,7 @@ export function SettingsOverview() {
               type="button"
               onClick={handleSendMagicLink}
               disabled={cloudDisabled || authActionLoading || signedIn}
-              className="rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-full bg-sky-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:text-white"
             >
               {authActionLoading && !signedIn ? "Sending..." : "Send magic link"}
             </button>
@@ -461,14 +454,7 @@ export function SettingsOverview() {
           </div>
 
           <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-            <p>
-              Cloud backup stores the same snapshot shape used by local JSON export: sync result,
-              review notes, and review history.
-            </p>
-            <p className="mt-2">
-              LocalStorage remains the source of truth. Cloud restore writes into local storage and
-              keeps the rest of the app behavior unchanged.
-            </p>
+            <p>LocalStorage remains the source of truth. Restore overwrites local app data.</p>
           </div>
 
           {cloudStatus ? <p className="text-sm text-slate-600">{cloudStatus}</p> : null}

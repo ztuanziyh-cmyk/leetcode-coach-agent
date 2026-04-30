@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Badge } from "@/components/badge";
 import { Card } from "@/components/card";
 import { DataSourceBadge } from "@/components/data-source-badge";
-import { LiveSubmissionList } from "@/components/live-submission-list";
 import { StatCard } from "@/components/stat-card";
 import { TopicMeter } from "@/components/topic-meter";
 import { getDashboardData } from "@/lib/review-logic";
@@ -30,8 +29,6 @@ export function DashboardOverview() {
         lastSyncedAt: storedSync?.syncedAt,
       }
     : fallbackData.userProfile;
-
-  const recentSubmissions = liveSync?.recentSubmissions ?? [];
 
   return (
     <>
@@ -62,7 +59,24 @@ export function DashboardOverview() {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+      <Card title="Profile overview">
+        <div className="flex flex-col gap-4 text-sm text-slate-700 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-lg font-semibold text-slate-950">{profile.displayName}</p>
+            <p className="mt-1">@{profile.username}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <DataSourceBadge live={usingLiveData} compact />
+            <Badge tone="good">{profile.totalSolved ?? 0} solved</Badge>
+            <Badge>Ranking {profile.ranking ?? "—"}</Badge>
+            <Badge>
+              Last synced {profile.lastSyncedAt?.slice(0, 10) ?? "Not synced"}
+            </Badge>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Daily review preview" subtitle="Highest-priority items should be one click away.">
           <div className="space-y-3">
             {fallbackData.weakTopics.slice(0, 3).map((topic) => (
@@ -71,80 +85,10 @@ export function DashboardOverview() {
           </div>
           <Link
             href="/review"
-            className="mt-5 inline-flex rounded-full bg-slate-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="mt-5 inline-flex rounded-full bg-sky-700 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-sky-800"
           >
             Open daily review
           </Link>
-        </Card>
-
-        <Card
-          title="Sync profile"
-          subtitle="Profile stats prefer locally synced LeetCode data when it exists."
-        >
-          <div className="space-y-4 text-sm text-slate-700">
-            <DataSourceBadge live={usingLiveData} />
-            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-              <p className="font-medium text-slate-950">{profile.displayName}</p>
-              <p className="mt-1">@{profile.username}</p>
-              <p className="mt-2 text-sm text-slate-600">
-                Last synced {profile.lastSyncedAt?.slice(0, 10) ?? "Not synced locally"}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge tone="good">Public sync only</Badge>
-              <Badge>No auth</Badge>
-              <Badge>LocalStorage persisted</Badge>
-            </div>
-            <p className="leading-7">
-              Profile totals and recent activity come from the latest local sync when available,
-              while the rest of the workspace stays usable with fallback sample data.
-            </p>
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <Card
-          title="Recent submissions"
-          subtitle={
-            usingLiveData
-              ? "Live local submission preview from the most recent username sync."
-              : "Fallback submission feed shown until a live sync is available."
-          }
-        >
-          <div className="mb-4">
-            <DataSourceBadge live={usingLiveData} compact />
-          </div>
-          {usingLiveData ? (
-            <LiveSubmissionList submissions={recentSubmissions} limit={8} />
-          ) : (
-            <div className="space-y-3">
-              {fallbackData.recentSubmissions.map((submission) => (
-                <div key={submission.id}>
-                  <div className="grid gap-3 rounded-[1.5rem] border border-slate-200 p-4 md:grid-cols-[minmax(0,1.2fr)_auto_auto_auto] md:items-center">
-                    <div>
-                      <Link
-                        href={`/problems/${submission.problemSlug}`}
-                        className="text-base font-semibold text-slate-950 hover:text-sky-700"
-                      >
-                        {submission.problem.title}
-                      </Link>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {submission.submittedAt.slice(0, 16)}
-                      </p>
-                    </div>
-                    <Badge tone={submission.status === "Accepted" ? "good" : "bad"}>
-                      {submission.status}
-                    </Badge>
-                    <p className="text-sm text-slate-600">{submission.language ?? "TypeScript"}</p>
-                    <p className="text-sm text-slate-600">
-                      {submission.runtimeMs ? `${submission.runtimeMs} ms` : "No runtime"}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </Card>
 
         <Card title="Weak topic watchlist" subtitle="Topics with low confidence and recent misses rise first.">

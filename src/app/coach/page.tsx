@@ -12,7 +12,7 @@ export default function CoachPage() {
       actions={
         <Link
           href="/coach/plan"
-          className="inline-flex rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="inline-flex rounded-full bg-sky-700 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-sky-800"
         >
           Open study planner
         </Link>

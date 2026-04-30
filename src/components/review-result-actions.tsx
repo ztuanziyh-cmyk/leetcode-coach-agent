@@ -31,14 +31,16 @@ export function ReviewResultActions({
   }
 
   return (
-    <div className="space-y-3">
+    <div className={compact ? "space-y-2.5" : "space-y-3"}>
       <label className="block">
         <span className="text-sm font-medium text-slate-700">Optional review note</span>
         <input
           value={note}
           onChange={(event) => setNote(event.target.value)}
           placeholder="Short note about what happened"
-          className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+          className={`mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100 ${
+            compact ? "py-2.5" : "py-3"
+          }`}
         />
       </label>
 
@@ -48,7 +50,9 @@ export function ReviewResultActions({
             key={result}
             type="button"
             onClick={() => handleResult(result)}
-            className="inline-flex rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50"
+            className={`inline-flex rounded-full border border-slate-300 bg-white text-sm font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 ${
+              compact ? "px-3 py-2" : "px-4 py-2.5"
+            }`}
           >
             {result}
           </button>

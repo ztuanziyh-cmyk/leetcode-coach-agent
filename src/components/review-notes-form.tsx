@@ -46,6 +46,11 @@ const patterns = [
   "Other",
 ] as const;
 
+const selectClassName =
+  "mt-1.5 w-full min-w-0 rounded-2xl border border-slate-300 bg-white py-2.5 pl-3 pr-10 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100";
+const inputClassName =
+  "mt-1.5 w-full rounded-2xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100";
+
 type ReviewNotesFormProps = {
   initialNote: LocalReviewNote;
 };
@@ -75,8 +80,8 @@ export function ReviewNotesForm({ initialNote }: ReviewNotesFormProps) {
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
-      <div className="grid gap-4 sm:grid-cols-2">
+    <form className="space-y-4" onSubmit={handleSubmit}>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <label className="block">
           <span className="text-sm font-medium text-slate-700">Review state</span>
           <select
@@ -84,7 +89,7 @@ export function ReviewNotesForm({ initialNote }: ReviewNotesFormProps) {
             onChange={(event) =>
               updateField("reviewState", event.target.value as LocalReviewNote["reviewState"])
             }
-            className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+            className={selectClassName}
           >
             {reviewStates.map((reviewState) => (
               <option key={reviewState} value={reviewState}>
@@ -104,7 +109,7 @@ export function ReviewNotesForm({ initialNote }: ReviewNotesFormProps) {
                 event.target.value ? Number(event.target.value) as 1 | 2 | 3 | 4 | 5 : null,
               )
             }
-            className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+            className={selectClassName}
           >
             <option value="">Select confidence</option>
             <option value="1">1</option>
@@ -121,7 +126,7 @@ export function ReviewNotesForm({ initialNote }: ReviewNotesFormProps) {
             type="date"
             value={form.nextReviewDate}
             onChange={(event) => updateField("nextReviewDate", event.target.value)}
-            className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+            className={inputClassName}
           />
         </label>
 
@@ -130,7 +135,7 @@ export function ReviewNotesForm({ initialNote }: ReviewNotesFormProps) {
           <select
             value={form.mistakeType}
             onChange={(event) => updateField("mistakeType", event.target.value as LocalReviewNote["mistakeType"])}
-            className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+            className={selectClassName}
           >
             <option value="">Select mistake type</option>
             {mistakeTypes.map((mistakeType) => (
@@ -146,7 +151,7 @@ export function ReviewNotesForm({ initialNote }: ReviewNotesFormProps) {
           <select
             value={form.pattern}
             onChange={(event) => updateField("pattern", event.target.value as LocalReviewNote["pattern"])}
-            className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+            className={selectClassName}
           >
             <option value="">Select pattern</option>
             {patterns.map((pattern) => (
@@ -163,8 +168,8 @@ export function ReviewNotesForm({ initialNote }: ReviewNotesFormProps) {
         <textarea
           value={form.coreIdea}
           onChange={(event) => updateField("coreIdea", event.target.value)}
-          rows={3}
-          className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+          rows={2}
+          className={inputClassName}
         />
       </label>
 
@@ -173,8 +178,8 @@ export function ReviewNotesForm({ initialNote }: ReviewNotesFormProps) {
         <textarea
           value={form.whyMissed}
           onChange={(event) => updateField("whyMissed", event.target.value)}
-          rows={3}
-          className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+          rows={2}
+          className={inputClassName}
         />
       </label>
 
@@ -183,8 +188,8 @@ export function ReviewNotesForm({ initialNote }: ReviewNotesFormProps) {
         <textarea
           value={form.keyTakeaway}
           onChange={(event) => updateField("keyTakeaway", event.target.value)}
-          rows={3}
-          className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+          rows={2}
+          className={inputClassName}
         />
       </label>
 
@@ -193,15 +198,15 @@ export function ReviewNotesForm({ initialNote }: ReviewNotesFormProps) {
         <textarea
           value={form.freeformNotes}
           onChange={(event) => updateField("freeformNotes", event.target.value)}
-          rows={5}
-          className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+          rows={3}
+          className={inputClassName}
         />
       </label>
 
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
-          className="inline-flex rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="inline-flex rounded-full bg-sky-700 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-sky-800"
         >
           Save notes locally
         </button>
